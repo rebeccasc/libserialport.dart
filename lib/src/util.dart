@@ -37,7 +37,12 @@ class Util {
   static int call(int Function() func) {
     final ret = func();
     if (ret < sp_return.SP_OK && SerialPort.lastError!.errorCode != 0) {
-      throw SerialPort.lastError!;
+      if(SerialPort.lastError!.errorCode == 996){
+        // HOT-FIX: ignore this error for now
+        // SerialPortError: Überlappendes E/A-Ereignis befindet sich nicht in einem signalisierten Zustand., errno = 996
+      } else{
+        throw SerialPort.lastError!;
+      }
     }
     return ret;
   }
@@ -46,6 +51,10 @@ class Util {
     return ffi.using((arena) {
       final ptr = arena<ffi.Uint8>(bytes);
       final len = call(() => readFunc(ptr));
+      // HOT-FIX: negative len indicates error - ignore this for now to make it works
+      if(len < 0){
+        return Uint8List.fromList([]);
+      }
       return Uint8List.fromList(ptr.asTypedList(len));
     });
   }
